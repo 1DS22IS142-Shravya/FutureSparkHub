@@ -1,0 +1,99 @@
+<!-- /my_career_portal/templates/career_chatbot.html -->
+{% extends "base.html" %}
+
+{% block title %}Career AI Chatbot - Career.AI Portal{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="center-title-container">
+        <h1 class="page-title">Career AI Chatbot</h1>
+    </div>
+    <p style="text-align: center; margin-bottom: 2rem;">Ask me anything about careers, job searching, skill development, and more!</p>
+
+    <div class="card">
+        <div id="chat-window">
+            <!-- Chat messages will appear here -->
+            <div class="message bot-message">Hello! How can I assist you with your career today?</div>
+        </div>
+        <form id="chatForm" style="margin-top: 1rem;">
+            <div id="chat-input-container" class="form-group" style="margin-bottom: 0;"> <!-- remove bottom margin from form-group -->
+                <input type="text" id="chatInput" name="message" placeholder="Type your message..." autocomplete="off" required>
+                <button type="submit" class="button" style="margin-left: 0.5rem;">Send</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const chatForm = document.getElementById('chatForm');
+const chatInput = document.getElementById('chatInput');
+const chatWindow = document.getElementById('chat-window');
+const sendButton = chatForm.querySelector('button[type="submit"]');
+
+function addMessageToChat(message, sender) {
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message');
+    messageDiv.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
+    messageDiv.textContent = message; // Using textContent for security against XSS
+    chatWindow.appendChild(messageDiv);
+    chatWindow.scrollTop = chatWindow.scrollHeight; // Scroll to bottom
+}
+
+chatForm.addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const userMessage = chatInput.value.trim();
+    if (!userMessage) return;
+
+    addMessageToChat(userMessage, 'user');
+    chatInput.value = '';
+    chatInput.disabled = true; 
+    sendButton.disabled = true;
+    sendButton.textContent = 'Sending...';
+
+
+    // Optional: Add a "Bot is typing..." indicator
+    const typingIndicator = document.createElement('div');
+    typingIndicator.classList.add('message', 'bot-message', 'typing-indicator');
+    typingIndicator.innerHTML = `<em>Bot is typing...</em>`; // Using innerHTML for italics
+    chatWindow.appendChild(typingIndicator);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: userMessage })
+        });
+        
+        // Remove typing indicator
+        chatWindow.removeChild(typingIndicator);
+
+        chatInput.disabled = false;
+        sendButton.disabled = false;
+        sendButton.textContent = 'Send';
+        chatInput.focus();
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({error: "Unknown server error"}));
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json(); 
+        addMessageToChat(result.response, 'bot');
+
+    } catch (error) {
+        console.error('Error communicating with chatbot:', error);
+        if(chatWindow.contains(typingIndicator)) { // Ensure it's still there before removing
+            chatWindow.removeChild(typingIndicator);
+        }
+        addMessageToChat(`Sorry, I encountered an error: ${error.message}. Please try again.`, 'bot');
+        chatInput.disabled = false;
+        sendButton.disabled = false;
+        sendButton.textContent = 'Send';
+        chatInput.focus();
+    }
+});
+</script>
+{% endblock %}

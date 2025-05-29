@@ -1,0 +1,37 @@
+<!-- /my_career_portal/templates/home.html -->
+{% extends "base.html" %}
+
+{% block title %}Home - Career.AI Portal{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container">
+        <h1>Elevate Your Career Path</h1>
+        <p>Utilize our AI-powered tools to build stunning resumes, find the best higher education, and get career advice.</p>
+        <a href="#features" class="button">Explore Tools</a>
+    </div>
+</section>
+
+<section id="features" class="features container">
+    <div class="feature-card">
+        <!-- <img src="{{ url_for('static', filename='img/icon-resume.svg') }}" alt="Resume Icon" class="icon"> -->
+        <h3>AI Resume Builder</h3>
+        <p>Craft a professional resume that stands out. Our AI helps you highlight your skills and experiences effectively.</p>
+        <a href="{{ url_for('resume_builder') }}" class="button">Build Your Resume</a>
+    </div>
+
+    <div class="feature-card">
+        <!-- <img src="{{ url_for('static', filename='img/icon-education.svg') }}" alt="Education Icon" class="icon"> -->
+        <h3>Higher Education Fetcher</h3>
+        <p>Discover universities and programs tailored to your ambitions. Search, compare, and make informed decisions.</p>
+        <a href="{{ url_for('education_fetcher') }}" class="button">Find Institutions</a>
+    </div>
+
+    <div class="feature-card">
+        <!-- <img src="{{ url_for('static', filename='img/icon-chatbot.svg') }}" alt="Chatbot Icon" class="icon"> -->
+        <h3>Career AI Chatbot</h3>
+        <p>Get instant answers to your career questions, explore different paths, and receive personalized guidance.</p>
+        <a href="{{ url_for('career_chatbot') }}" class="button">Chat Now</a>
+    </div>
+</section>
+{% endblock %}

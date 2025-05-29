@@ -1,0 +1,110 @@
+<!-- /my_career_portal/templates/education_fetcher.html -->
+{% extends "base.html" %}
+{% block title %}Higher Education Fetcher - Career.AI Portal{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="center-title-container"><h1 class="page-title">Higher Education Fetcher</h1></div>
+    <p style="text-align: center; margin-bottom: 2rem;">Find universities and programs. Leave fields blank for broader results.</p>
+    <div class="card">
+        <form id="educationSearchForm">
+            <div class="form-group">
+                <label for="country">Country (Optional):</label>
+                <input type="text" id="country" name="country" placeholder="e.g., USA, Canada, Germany">
+            </div>
+            <div class="form-group">
+                <label for="fieldOfStudy">Field/Course Type (Optional):</label>
+                <input type="text" id="fieldOfStudy" name="fieldOfStudy" placeholder="e.g., Computer Science, MBA, M.Tech Electrical">
+            </div>
+            <div class="form-group">
+                <label for="degreeLevel">Degree Level (Optional):</label>
+                <select id="degreeLevel" name="degreeLevel">
+                    <option value="">Any</option>
+                    <option value="bachelor">Bachelor's</option>
+                    <option value="master">Master's</option>
+                    <option value="phd">PhD</option>
+                    <option value="diploma">Diploma/Certificate</option>
+                </select>
+            </div>
+            <button type="submit" class="button">Search Institutions</button>
+        </form>
+    </div>
+    <div id="searchResultsContainer" style="margin-top: 2rem;">
+        <p id="searchStatus" style="text-align:center; display:none;">Searching...</p>
+        <div id="searchResults" class="features" style="grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));">
+            <!-- Results will be dynamically inserted here, using 'features' class for grid layout -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('educationSearchForm').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const submitButton = this.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Searching...';
+
+    const formData = new FormData(this);
+    const params = new URLSearchParams();
+    if (formData.get('country')) params.append('country', formData.get('country'));
+    if (formData.get('fieldOfStudy')) params.append('fieldOfStudy', formData.get('fieldOfStudy'));
+    if (formData.get('degreeLevel')) params.append('degreeLevel', formData.get('degreeLevel'));
+
+    const searchStatus = document.getElementById('searchStatus');
+    const resultsContainer = document.getElementById('searchResults');
+    resultsContainer.innerHTML = ''; 
+    searchStatus.style.display = 'block';
+    searchStatus.textContent = 'Searching for institutions...';
+
+    try {
+        const response = await fetch(`/api/search_education?${params.toString()}`);
+        const results = await response.json();
+        searchStatus.style.display = 'none';
+
+        if (!response.ok) { // Check after parsing JSON, as error might be in JSON
+            throw new Error(results.error || `HTTP error! Status: ${response.status}`);
+        }
+        
+        if (results.length === 0) {
+            resultsContainer.innerHTML = '<div class="card" style="text-align:center; grid-column: 1 / -1;"><p>No institutions found matching your criteria. Try broadening your search.</p></div>';
+        } else {
+            results.forEach(inst => {
+                const card = document.createElement('div');
+                // card.className = 'card result-card'; // Using feature-card style from home
+                card.className = 'feature-card'; // Use existing feature-card for styling
+                card.style.textAlign = 'left'; // Override center align from feature-card
+                card.style.height = 'auto'; // Allow card to grow
+                card.style.minHeight = '450px'; // Give some min height
+
+                let programsHTML = inst.programs && inst.programs.length > 0 ? 
+                    `<ul>${inst.programs.map(p => `<li>${p}</li>`).join('')}</ul>` : '<p>N/A</p>';
+                
+                const websiteLink = inst.website ? 
+                    `<a href="${inst.website.startsWith('http') ? inst.website : 'http://' + inst.website}" target="_blank" rel="noopener noreferrer">${inst.website}</a>` : 'N/A';
+                
+                const ratingStars = inst.rating ? `<span style="color: #ffc107;">⭐ ${inst.rating}/5</span>` : '';
+
+                card.innerHTML = `
+                    ${inst.image_url ? `<img src="${inst.image_url}" alt="${inst.name || 'Institution'}" style="width:100%; height:180px; object-fit:cover; border-radius: 5px; margin-bottom:1rem;">` : '<div style="width:100%; height:180px; background:#333; border-radius:5px; margin-bottom:1rem; display:flex; align-items:center; justify-content:center;"><p style="color:#777;">No Image</p></div>'}
+                    <h3>${inst.name || 'Institution Name Missing'}</h3>
+                    <p style="font-size:0.9em;"><strong>📍 Address:</strong> ${inst.address || 'N/A'} ${ratingStars}</p>
+                    <p style="font-size:0.9em;"><strong>🌍 Country:</strong> ${inst.country || 'N/A'}</p>
+                    <p style="font-size:0.9em;"><strong>🔗 Website:</strong> ${websiteLink}</p>
+                    ${inst.description ? `<div style="font-size:0.85em; color:#ccc; margin-top:0.75rem; max-height:100px; overflow-y:auto; padding-right:5px;"><strong>ℹ️ About:</strong> ${inst.description}</div>` : ''}
+                    <p style="margin-top:0.75rem; font-size:0.9em;"><strong>📚 Course Focus:</strong></p>
+                    <div style="font-size:0.85em;">${programsHTML}</div>
+                `;
+                resultsContainer.appendChild(card);
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching education data:', error);
+        searchStatus.style.display = 'none';
+        resultsContainer.innerHTML = `<div class="card" style="text-align:center; color:red; grid-column: 1 / -1;"><p><strong>Error:</strong> ${error.message}</p></div>`;
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Search Institutions';
+    }
+});
+</script>
+{% endblock %}

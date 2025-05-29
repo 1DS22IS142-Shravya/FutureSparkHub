@@ -1,0 +1,293 @@
+<!-- /my_career_portal/templates/resume_builder.html -->
+{% extends "base.html" %}
+{% block title %}Resume Builder - Career.AI Portal{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="center-title-container"><h1 class="page-title">AI Resume Builder</h1></div>
+    <p style="text-align: center; margin-bottom: 2rem;">Fill in your details, leverage AI for your summary, and generate a professional PDF resume.</p>
+
+    <div class="card">
+        <form id="resumeForm">
+            <h3>👤 Personal Information</h3>
+            <div class="form-group"><label for="fullName">Full Name:</label><input type="text" id="fullName" name="fullName" required></div>
+            <div class="form-group"><label for="email">Email:</label><input type="email" id="email" name="email" required></div>
+            <div class="form-group"><label for="phone">Phone:</label><input type="text" id="phone" name="phone"></div>
+            <div class="form-group"><label for="location">Location (e.g., City, Country):</label><input type="text" id="location" name="location"></div>
+            <div class="form-group"><label for="linkedin">LinkedIn Profile URL (Optional):</label><input type="url" id="linkedin" name="linkedin" placeholder="https://linkedin.com/in/yourprofile"></div>
+            <div class="form-group"><label for="github">GitHub Profile URL (Optional):</label><input type="url" id="github" name="github" placeholder="https://github.com/yourusername"></div>
+
+            <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+            <h3>📝 Profile Summary</h3>
+            <div class="form-group">
+                <label for="summary_keywords">Keywords for AI Summary (comma-separated):</label>
+                <input type="text" id="summary_keywords" name="summary_keywords" placeholder="e.g., Data Science, Python, Project Management">
+            </div>
+            <div class="form-group">
+                <label for="summary_experience_highlights">Key Experience/Goals for AI Summary:</label>
+                <textarea id="summary_experience_highlights" name="summary_experience_highlights" rows="3" placeholder="e.g., Led a team to increase efficiency by 15%..."></textarea>
+            </div>
+            <button type="button" id="generateAISummaryBtn" class="button" style="margin-bottom: 1rem; background-color: #5cb85c;">✨ Generate Profile Summary with AI</button>
+            <div class="form-group">
+                <label for="summary">Your Profile Summary (AI-generated or manual):</label>
+                <textarea id="summary" name="summary" rows="4" placeholder="A brief overview of your career goals and key skills..."></textarea>
+            </div>
+
+            <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+            <h3>🎓 Education</h3>
+            <div id="educationSections"></div>
+            <button type="button" id="addEducationBtn" class="button" style="background-color: #4CAF50; margin-bottom: 1rem;">+ Add Education</button>
+            
+            <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+            <h3>💼 Work Experience</h3>
+            <div id="experienceSections"></div>
+            <button type="button" id="addExperienceBtn" class="button" style="background-color: #4CAF50; margin-bottom: 1rem;">+ Add Experience</button>
+
+            <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+            <h3>🚀 Projects</h3>
+            <div id="projectSections"></div>
+            <button type="button" id="addProjectBtn" class="button" style="background-color: #4CAF50; margin-bottom: 1rem;">+ Add Project</button>
+
+            <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+            <h3>🛠️ Skills</h3>
+            <div class="form-group">
+                <label for="skills_tools_header">Header for Skills Section in PDF (e.g., SKILLS, TECHNICAL PROFICIENCIES):</label>
+                <input type="text" id="skills_tools_header" name="skills_tools_header" value="SKILLS">
+            </div>
+            <div class="form-group">
+                <label for="skills_input">Skills (comma-separated):</label>
+                <textarea id="skills_input" name="skills_input" rows="3" placeholder="e.g., Python, JavaScript, AWS, Docker, Agile"></textarea>
+            </div>
+
+            <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+            <h3>📜 Certificates</h3>
+            <div id="certificateSections"></div>
+            <button type="button" id="addCertificateBtn" class="button" style="background-color: #4CAF50; margin-bottom: 1rem;">+ Add Certificate</button>
+
+            <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+            <h3>🏆 Achievements</h3>
+            <div id="achievementSections"></div>
+            <button type="button" id="addAchievementBtn" class="button" style="background-color: #4CAF50; margin-bottom: 1rem;">+ Add Achievement</button>
+            
+            <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
+            <button type="submit" class="button" style="width:100%; padding: 1rem; font-size: 1.2rem;">🚀 Generate Resume PDF</button>
+        </form>
+    </div>
+
+    <div id="resumeOutputCard" class="card" style="display:none; margin-top: 2rem;">
+        <h2>Your Generated Resume</h2>
+        <div id="resumeResult">
+            <pre id="generatedResumeContent" style="white-space: pre-wrap; word-wrap: break-word; background: var(--primary-bg); padding:1rem; border-radius: 4px; max-height: 500px; overflow-y:auto;"></pre>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Dynamic Section Adder Function ---
+    function createDynamicSectionAdder(containerId, addButtonId, sectionNameSingular, fieldsConfig) {
+        const container = document.getElementById(containerId);
+        const addButton = document.getElementById(addButtonId);
+        let count = 0;
+
+        function addSection() {
+            count++;
+            const sectionId = `${sectionNameSingular.toLowerCase().replace(/\s+/g, '')}${count}`;
+            const newSection = document.createElement('fieldset');
+            newSection.id = sectionId;
+            newSection.style.border = "1px solid var(--border-color)";
+            newSection.style.padding = "1rem";
+            newSection.style.marginBottom = "1rem";
+            newSection.style.borderRadius = "5px";
+
+            let fieldsHTML = `<legend style="color: var(--accent-color); padding: 0 0.5rem;">${sectionNameSingular} #${count} 
+                <button type="button" class="remove-section-btn" data-section-id="${sectionId}" style="background:crimson; color:white; border:none; padding: 0.2rem 0.5rem; border-radius:3px; cursor:pointer; font-size:0.8em; margin-left:10px;">Remove</button>
+            </legend>`;
+            
+            fieldsConfig.forEach(field => {
+                const inputId = `${field.name}${count}`;
+                fieldsHTML += `<div class="form-group">
+                                <label for="${inputId}">${field.label}:</label>`;
+                if (field.type === 'textarea') {
+                    fieldsHTML += `<textarea id="${inputId}" name="${field.name}${count}" rows="${field.rows || 3}" placeholder="${field.placeholder || ''}"></textarea>`;
+                } else {
+                    fieldsHTML += `<input type="${field.type || 'text'}" id="${inputId}" name="${field.name}${count}" placeholder="${field.placeholder || ''}">`;
+                }
+                fieldsHTML += `</div>`;
+            });
+            newSection.innerHTML = fieldsHTML;
+            container.appendChild(newSection);
+            newSection.querySelector('.remove-section-btn').addEventListener('click', function() {
+                document.getElementById(this.dataset.sectionId).remove();
+            });
+        }
+        addButton.addEventListener('click', addSection);
+        addSection(); // Add one section by default
+        return () => count; // Return a function to get the current count
+    }
+
+    // Configure and initialize dynamic sections
+    const getEducationCount = createDynamicSectionAdder('educationSections', 'addEducationBtn', 'Education', [
+        { name: 'degree', label: 'Degree/Certificate', placeholder: 'e.g., B.Tech in Computer Science' },
+        { name: 'institution', label: 'Institution', placeholder: 'e.g., University Name' },
+        { name: 'year', label: 'Year/Dates', placeholder: 'e.g., 2020 - 2024' },
+        { name: 'details', label: 'Additional Details (CGPA, Honors)', placeholder: 'e.g., CGPA: 9.0, Dean\'s List' }
+    ]);
+    const getExperienceCount = createDynamicSectionAdder('experienceSections', 'addExperienceBtn', 'Experience', [
+        { name: 'jobTitle', label: 'Job Title', placeholder: 'e.g., Software Engineer Intern' },
+        { name: 'company', label: 'Company', placeholder: 'e.g., Tech Solutions Inc.' },
+        { name: 'jobDates', label: 'Dates', placeholder: 'e.g., Jan 2023 - May 2023' },
+        { name: 'jobDescription', label: 'Description (one point per line)', type: 'textarea', rows: 4, placeholder: '• Developed feature X...\n• Collaborated on project Y...' }
+    ]);
+    const getProjectCount = createDynamicSectionAdder('projectSections', 'addProjectBtn', 'Project', [
+        { name: 'projectTitle', label: 'Project Title', placeholder: 'e.g., AI Resume Builder' },
+        { name: 'projectStackStr', label: 'Tech Stack (comma-separated)', placeholder: 'e.g., Python, Streamlit, Gemini API' }, // Note: projectStackStr
+        { name: 'projectDescriptionStr', label: 'Description (one point per line)', type: 'textarea', rows: 4, placeholder: '• Built X feature...\n• Used Z technologies...' } // Note: projectDescriptionStr
+    ]);
+    const getCertificateCount = createDynamicSectionAdder('certificateSections', 'addCertificateBtn', 'Certificate', [
+        { name: 'certName', label: 'Certificate Name', placeholder: 'e.g., Google Cloud Certified' },
+        { name: 'certIssuer', label: 'Issuing Organization', placeholder: 'e.g., Google Cloud' },
+        { name: 'certDate', label: 'Date Issued', placeholder: 'e.g., June 2023' },
+        { name: 'certDescription', label: 'Link/ID (Optional)', placeholder: 'e.g., https://credential.link or ID: XYZ' }
+    ]);
+    const getAchievementCount = createDynamicSectionAdder('achievementSections', 'addAchievementBtn', 'Achievement', [
+        { name: 'achTitle', label: 'Title (Optional)', placeholder: 'e.g., Winner - National Hackathon' },
+        { name: 'achContextDate', label: 'Context/Date (Optional)', placeholder: 'e.g., March 2023' },
+        { name: 'achDescriptionStr', label: 'Description (one point per line)', type: 'textarea', rows: 3, placeholder: '• Led a team of 4...\n• Received commendation...' }
+    ]);
+
+
+    // --- AI Summary Generation ---
+    document.getElementById('generateAISummaryBtn').addEventListener('click', async function() {
+        const keywordsRaw = document.getElementById('summary_keywords').value;
+        const keywords = keywordsRaw ? keywordsRaw.split(',').map(k => k.trim()).filter(k => k) : [];
+        const experience_highlights = document.getElementById('summary_experience_highlights').value;
+        const summaryTextarea = document.getElementById('summary');
+        const originalButtonText = this.textContent;
+        this.disabled = true;
+        this.textContent = "AI Thinking...";
+
+        try {
+            const response = await fetch('/api/generate_summary', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keywords, experience_highlights })
+            });
+            const result = await response.json();
+            if (result.summary) {
+                summaryTextarea.value = result.summary;
+                if (result.ai_message && result.ai_message !== result.summary) { // If there's a specific message from AI
+                    alert("AI Message: " + result.ai_message);
+                }
+            } else {
+                summaryTextarea.value = "Error: " + (result.error || "Could not generate summary.");
+                alert("Error generating summary: " + (result.error || "Unknown issue."));
+            }
+        } catch (error) {
+            console.error("Error generating AI summary:", error);
+            summaryTextarea.value = "Error: Could not connect to AI summary service.";
+            alert("Error: Could not connect to AI summary service.");
+        } finally {
+            this.disabled = false;
+            this.textContent = originalButtonText;
+        }
+    });
+
+    // --- Main Resume Form Submission ---
+    document.getElementById('resumeForm').addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const submitButton = this.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Generating PDF... Please Wait';
+
+        const formData = new FormData(this);
+        const data = {
+            name: formData.get('fullName'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+            location: formData.get('location'),
+            linkedin: formData.get('linkedin'),
+            github: formData.get('github'),
+            summary: formData.get('summary'),
+            skills_tools_header: formData.get('skills_tools_header'),
+            skills_input: formData.get('skills_input'), // Will be processed by backend
+            education: [], experience: [], projects: [], certificates: [], achievements: []
+        };
+
+        for (let i = 1; i <= getEducationCount(); i++) {
+            if (document.getElementById(`education${i}`)) {
+                data.education.push({
+                    degree: formData.get(`degree${i}`), institution: formData.get(`institution${i}`),
+                    year: formData.get(`year${i}`), details: formData.get(`details${i}`)
+                });
+            }
+        }
+        for (let i = 1; i <= getExperienceCount(); i++) {
+            if (document.getElementById(`experience${i}`)) {
+                const descStr = formData.get(`jobDescription${i}`);
+                data.experience.push({
+                    title: formData.get(`jobTitle${i}`), company: formData.get(`company${i}`),
+                    dates: formData.get(`jobDates${i}`),
+                    description: descStr ? descStr.split('\n').map(s => s.trim()).filter(s => s) : []
+                });
+            }
+        }
+        for (let i = 1; i <= getProjectCount(); i++) {
+            if (document.getElementById(`project${i}`)) {
+                const descStr = formData.get(`projectDescriptionStr${i}`);
+                data.projects.push({
+                    title: formData.get(`projectTitle${i}`),
+                    stack_str: formData.get(`projectStackStr${i}`), // Send as string
+                    description: descStr ? descStr.split('\n').map(s => s.trim()).filter(s => s) : []
+                });
+            }
+        }
+        for (let i = 1; i <= getCertificateCount(); i++) {
+            if (document.getElementById(`certificate${i}`)) {
+                data.certificates.push({
+                    name: formData.get(`certName${i}`), issuer: formData.get(`certIssuer${i}`),
+                    date: formData.get(`certDate${i}`), description: formData.get(`certDescription${i}`)
+                });
+            }
+        }
+        for (let i = 1; i <= getAchievementCount(); i++) {
+            if (document.getElementById(`achievement${i}`)) {
+                data.achievements.push({
+                    title: formData.get(`achTitle${i}`), context_date: formData.get(`achContextDate${i}`),
+                    description_str: formData.get(`achDescriptionStr${i}`) // Send as string, backend PDF func will split
+                });
+            }
+        }
+        
+        const resumeOutputCard = document.getElementById('resumeOutputCard');
+        const resumeResultDiv = document.getElementById('resumeResult');
+        resumeOutputCard.style.display = 'block';
+        resumeResultDiv.innerHTML = '<p>Processing your information and generating PDF...</p>';
+
+        try {
+            const response = await fetch('/api/build_resume', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (response.ok && result.download_url) {
+                resumeResultDiv.innerHTML = 
+                    `<h4>🎉 Resume PDF Generated!</h4>
+                     <a href="${result.download_url}" class="button" download target="_blank">📥 Download Resume PDF</a>
+                     <p style="margin-top:10px;">${result.message || ''}</p>`;
+            } else {
+                throw new Error(result.error || "Failed to generate PDF. Unknown error.");
+            }
+        } catch (error) {
+            console.error('Error generating resume PDF:', error);
+            resumeResultDiv.innerHTML = `<p style="color:red;"><strong>Error generating PDF:</strong> ${error.message}</p>`;
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = '🚀 Generate Resume PDF';
+        }
+    });
+});
+</script>
+{% endblock %}
